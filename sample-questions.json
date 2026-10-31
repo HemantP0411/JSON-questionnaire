@@ -1,0 +1,58 @@
+[
+  {
+    "id": "q_001",
+    "question": "Which of the following IDEs natively support the GitHub Copilot extension? (Select two)",
+    "type": "multiple",
+    "options": [
+      { "id": "a", "text": "Visual Studio Code" },
+      { "id": "b", "text": "Eclipse" },
+      { "id": "c", "text": "JetBrains IntelliJ IDEA" },
+      { "id": "d", "text": "Notepad++" }
+    ],
+    "correct_option_ids": ["a", "c"],
+    "explanation": "GitHub Copilot currently has official extensions for VS Code, Visual Studio, JetBrains IDEs, and Neovim.",
+    "topic": "Environment Setup"
+  },
+  {
+    "id": "q_002",
+    "question": "What is the capital of France?",
+    "type": "single",
+    "options": [
+      { "id": "a", "text": "London" },
+      { "id": "b", "text": "Berlin" },
+      { "id": "c", "text": "Paris" },
+      { "id": "d", "text": "Madrid" }
+    ],
+    "correct_option_ids": ["c"],
+    "explanation": "Paris is the capital and most populous city of France.",
+    "topic": "Geography"
+  },
+  {
+    "id": "q_003",
+    "question": "Which HTTP status codes indicate client-side errors? (Select all that apply)",
+    "type": "multiple",
+    "options": [
+      { "id": "a", "text": "200 OK" },
+      { "id": "b", "text": "400 Bad Request" },
+      { "id": "c", "text": "404 Not Found" },
+      { "id": "d", "text": "500 Internal Server Error" }
+    ],
+    "correct_option_ids": ["b", "c"],
+    "explanation": "4xx status codes are designated for client errors, whereas 5xx are server errors and 2xx represent successful requests.",
+    "topic": "Web Protocols"
+  },
+  {
+    "id": "q_004",
+    "question": "What will `typeof NaN` evaluate to in JavaScript?",
+    "type": "single",
+    "options": [
+      { "id": "a", "text": "\"number\"" },
+      { "id": "b", "text": "\"nan\"" },
+      { "id": "c", "text": "\"undefined\"" },
+      { "id": "d", "text": "\"object\"" }
+    ],
+    "correct_option_ids": ["a"],
+    "explanation": "In JavaScript, NaN stands for 'Not-a-Number', but its data type is technically a numeric type according to the IEEE 754 floating-point standard.",
+    "topic": "JavaScript Fundamentals"
+  }
+]

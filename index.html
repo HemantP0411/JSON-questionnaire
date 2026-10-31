@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizCraft &bull; JSON MCQ Quiz Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient background glow -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+      <div class="brand" id="brand-logo" title="Back to Home">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="m9 15 2 2 4-4"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">QuizCraft</span>
+          <span class="brand-subtitle">JSON MCQ Engine</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Sound toggle button -->
+        <button id="sound-toggle-btn" class="icon-btn" title="Toggle Sound Effects" aria-label="Toggle Sound Effects">
+          <svg class="icon-sound-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg class="icon-sound-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+
+        <!-- Theme toggle button -->
+        <button id="theme-toggle-btn" class="icon-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+
+        <!-- Exit / Load new file button (visible during quiz) -->
+        <button id="exit-quiz-btn" class="btn btn-outline btn-sm hidden" title="Exit to upload screen">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Change JSON</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="main-content">
+
+      <!-- ============================================== -->
+      <!-- SCREEN 1: UPLOAD & SETUP SCREEN                 -->
+      <!-- ============================================== -->
+      <section id="screen-upload" class="view-screen active">
+        <div class="hero-section">
+          <div class="hero-badge">Interactive MCQ Viewer</div>
+          <h1 class="hero-title">Practice Questions from Any JSON</h1>
+          <p class="hero-desc">
+            Upload your questionnaire JSON file to take interactive, step-by-step multiple choice quizzes with instant answer feedback and explanations.
+          </p>
+        </div>
+
+        <div class="upload-card">
+          <!-- Drag & Drop Zone -->
+          <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop JSON file here or click to browse">
+            <div class="drop-icon-wrapper">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <div class="drop-title">Drag & drop your JSON file here</div>
+            <div class="drop-sub">or click to browse from your computer</div>
+            <div class="drop-badge">Supports .json files</div>
+            <input type="file" id="file-input" accept=".json,application/json" class="file-input-hidden">
+          </div>
+
+          <!-- Quick Actions & Format Helper -->
+          <div class="upload-actions-bar">
+            <button id="load-sample-btn" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Try Sample Questions</span>
+            </button>
+            <button id="paste-json-btn" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Paste JSON Directly</span>
+            </button>
+          </div>
+
+          <!-- Expected Schema Preview / Accordion -->
+          <details class="schema-details">
+            <summary class="schema-summary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>View Supported JSON Format</span>
+            </summary>
+            <div class="schema-content">
+              <pre><code>[
+  {
+    "id": "q_001",
+    "question": "Which of the following IDEs natively support GitHub Copilot?",
+    "type": "multiple",
+    "options": [
+      { "id": "a", "text": "Visual Studio Code" },
+      { "id": "b", "text": "Eclipse" },
+      { "id": "c", "text": "JetBrains IntelliJ IDEA" },
+      { "id": "d", "text": "Notepad++" }
+    ],
+    "correct_option_ids": ["a", "c"],
+    "explanation": "GitHub Copilot has official extensions for VS Code and JetBrains.",
+    "topic": "Environment Setup"
+  },
+  {
+    "id": "q_002",
+    "question": "What is the capital of France?",
+    "type": "single",
+    "options": [
+      { "id": "a", "text": "London" },
+      { "id": "b", "text": "Berlin" },
+      { "id": "c", "text": "Paris" },
+      { "id": "d", "text": "Madrid" }
+    ],
+    "correct_option_ids": ["c"]
+  }
+]</code></pre>
+            </div>
+          </details>
+        </div>
+
+        <!-- Error Notification Toast / Banner -->
+        <div id="upload-error" class="error-banner hidden" role="alert">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div class="error-text" id="upload-error-msg"></div>
+          <button id="upload-error-close" class="close-btn" aria-label="Dismiss error">&times;</button>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- SCREEN 2: ACTIVE QUIZ SCREEN (1 Q AT A TIME)   -->
+      <!-- ============================================== -->
+      <section id="screen-quiz" class="view-screen">
+        <!-- Progress Bar & Top Stats -->
+        <div class="quiz-status-card">
+          <div class="quiz-meta-row">
+            <div class="question-tracker">
+              <span class="tracker-label">Question</span>
+              <span id="current-q-num" class="tracker-current">1</span>
+              <span class="tracker-separator">/</span>
+              <span id="total-q-num" class="tracker-total">10</span>
+            </div>
+
+            <!-- Jump to question selector / Quick Grid toggle -->
+            <div class="quick-nav-controls">
+              <button id="toggle-grid-btn" class="btn btn-ghost btn-sm" title="Toggle Question Map">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Question List</span>
+              </button>
+
+              <div class="live-score-badge">
+                <span class="score-label">Score</span>
+                <span id="live-score-value" class="score-value">0</span>
+                <span class="score-denom">/<span id="live-score-attempted">0</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Bar fill -->
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="10">
+            <div id="progress-bar-fill" class="progress-fill" style="width: 10%;"></div>
+          </div>
+
+          <!-- Expandable Questions Navigator Grid -->
+          <div id="questions-grid-drawer" class="questions-grid-drawer hidden">
+            <div class="grid-header">
+              <span>Jump to Question</span>
+              <div class="grid-legend">
+                <span class="legend-item"><span class="legend-dot dot-correct"></span> Correct</span>
+                <span class="legend-item"><span class="legend-dot dot-incorrect"></span> Incorrect</span>
+                <span class="legend-item"><span class="legend-dot dot-unanswered"></span> Pending</span>
+              </div>
+            </div>
+            <div id="questions-grid-list" class="questions-grid-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Question Card -->
+        <article class="question-card" id="question-card">
+          <!-- Card Header: Badges & metadata -->
+          <div class="card-header">
+            <div class="badges-row">
+              <span id="q-topic-badge" class="badge badge-topic hidden">Topic</span>
+              <span id="q-type-badge" class="badge badge-type">Single Choice</span>
+            </div>
+            <span id="q-hint-instruction" class="instruction-hint">Select 1 option</span>
+          </div>
+
+          <!-- Question Body -->
+          <h2 id="q-text" class="question-text">
+            Loading question...
+          </h2>
+
+          <!-- Options Container -->
+          <fieldset id="options-container" class="options-container">
+            <legend class="sr-only">Answer options</legend>
+            <!-- Rendered by JS -->
+          </fieldset>
+
+          <!-- Result Feedback Card (Appears after submission) -->
+          <div id="feedback-card" class="feedback-card hidden" role="region" aria-live="polite">
+            <div class="feedback-header">
+              <div id="feedback-icon" class="feedback-icon-wrapper"></div>
+              <div class="feedback-text-group">
+                <h3 id="feedback-title" class="feedback-title">Result Title</h3>
+                <p id="feedback-desc" class="feedback-desc">Feedback message</p>
+              </div>
+            </div>
+
+            <!-- Explanation area -->
+            <div id="explanation-box" class="explanation-box hidden">
+              <div class="explanation-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v1"></path>
+                  <path d="M12 21v1"></path>
+                  <path d="M4.22 4.22l.71.71"></path>
+                  <path d="M18.36 18.36l.71.71"></path>
+                  <path d="M1 12h1"></path>
+                  <path d="M21 12h1"></path>
+                  <path d="M4.22 19.78l.71-.71"></path>
+                  <path d="M18.36 5.64l.71-.71"></path>
+                  <path d="M9 18h6"></path>
+                  <path d="M10 22h4"></path>
+                  <path d="M12 6a5 5 0 0 0-5 5c0 2 1.5 3.5 2 4.5h6c.5-1 2-2.5 2-4.5a5 5 0 0 0-5-5z"></path>
+                </svg>
+                <span>Explanation</span>
+              </div>
+              <div id="explanation-text" class="explanation-text"></div>
+            </div>
+          </div>
+
+          <!-- Card Footer: Controls & Navigation -->
+          <div class="card-footer">
+            <div class="footer-left">
+              <button id="prev-btn" class="btn btn-outline" disabled title="Go to previous question (Left Arrow)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Previous</span>
+              </button>
+            </div>
+
+            <div class="footer-right">
+              <!-- Submit Button -->
+              <button id="submit-btn" class="btn btn-primary" disabled title="Submit your selection (Enter)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Check Answer</span>
+              </button>
+
+              <!-- Next Button (revealed after submission) -->
+              <button id="next-btn" class="btn btn-primary hidden" title="Proceed to next question (Enter or Right Arrow)">
+                <span>Next Question</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+
+              <!-- Finish Quiz Button (on last question after submission) -->
+              <button id="finish-btn" class="btn btn-success hidden" title="View final quiz score">
+                <span>View Results</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Keyboard shortcut hints footer -->
+        <div class="shortcuts-hint">
+          <span>Shortcuts:</span>
+          <kbd>A</kbd>-<kbd>D</kbd> or <kbd>1</kbd>-<kbd>4</kbd> Select option
+          <span class="sep">&bull;</span>
+          <kbd>Enter</kbd> Check / Next
+          <span class="sep">&bull;</span>
+          <kbd>&larr;</kbd> / <kbd>&rarr;</kbd> Prev / Next
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- SCREEN 3: RESULTS & SCORE SUMMARY SCREEN        -->
+      <!-- ============================================== -->
+      <section id="screen-results" class="view-screen">
+        <div class="results-card">
+          <div class="results-header">
+            <div id="results-icon-badge" class="trophy-badge">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                <path d="M4 22h16"></path>
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+              </svg>
+            </div>
+            <h1 class="results-title" id="results-title">Quiz Completed!</h1>
+            <p class="results-sub" id="results-message">Here is a detailed summary of your score.</p>
+          </div>
+
+          <!-- Score circle / stats summary -->
+          <div class="stats-grid">
+            <div class="stat-box primary">
+              <div class="stat-big" id="res-percentage">0%</div>
+              <div class="stat-label">Accuracy</div>
+            </div>
+            <div class="stat-box success">
+              <div class="stat-big" id="res-correct">0</div>
+              <div class="stat-label">Correct</div>
+            </div>
+            <div class="stat-box danger">
+              <div class="stat-big" id="res-incorrect">0</div>
+              <div class="stat-label">Incorrect</div>
+            </div>
+            <div class="stat-box neutral">
+              <div class="stat-big" id="res-total">0</div>
+              <div class="stat-label">Total Questions</div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="results-actions">
+            <button id="res-retry-btn" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                <path d="M21 3v5h-5"></path>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                <path d="M3 21v-5h5"></path>
+              </svg>
+              <span>Retake Quiz</span>
+            </button>
+            <button id="res-review-btn" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>Review All Questions</span>
+            </button>
+            <button id="res-new-btn" class="btn btn-outline">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Upload New JSON</span>
+            </button>
+          </div>
+
+          <!-- Detailed Breakdown List -->
+          <div class="review-section">
+            <h3 class="review-heading">Question Review</h3>
+            <div id="review-list" class="review-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Paste JSON Modal -->
+    <div id="paste-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 id="modal-title" class="modal-title">Paste JSON Content</h3>
+          <button id="modal-close-btn" class="close-btn" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">Paste your MCQ JSON questions array below:</p>
+          <textarea id="paste-textarea" class="paste-textarea" placeholder='[&#10;  {&#10;    "id": "q_001",&#10;    "question": "Sample question?",&#10;    "type": "single",&#10;    "options": [&#10;      { "id": "a", "text": "Option A" },&#10;      { "id": "b", "text": "Option B" }&#10;    ],&#10;    "correct_option_ids": ["a"]&#10;  }&#10;]' spellcheck="false"></textarea>
+          <div id="modal-error" class="modal-error hidden"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="modal-cancel-btn" class="btn btn-ghost">Cancel</button>
+          <button id="modal-submit-btn" class="btn btn-primary">Start Quiz</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast message container -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
