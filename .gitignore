@@ -1,0 +1,14 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment and IDE settings
+.vscode/
+.idea/
+
+# Questionnaires & Custom Question Data
+questions/
+data/
+*.json
+!sample-questions.json
