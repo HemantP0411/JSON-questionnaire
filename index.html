@@ -14,7 +14,7 @@
   <div class="bg-glow bg-glow-1"></div>
   <div class="bg-glow bg-glow-2"></div>
 
-  <div class="app-container">
+  <div class="app-container" id="app-container">
     <!-- Top Navigation Bar -->
     <header class="app-header">
       <div class="brand" id="brand-logo" title="Back to Home">
@@ -183,7 +183,7 @@
       <!-- SCREEN 2: ACTIVE QUIZ SCREEN (1 Q AT A TIME)   -->
       <!-- ============================================== -->
       <section id="screen-quiz" class="view-screen">
-        <!-- Progress Bar & Top Stats -->
+        <!-- Top Status & Progress Bar -->
         <div class="quiz-status-card">
           <div class="quiz-meta-row">
             <div class="question-tracker">
@@ -193,16 +193,17 @@
               <span id="total-q-num" class="tracker-total">10</span>
             </div>
 
-            <!-- Jump to question selector / Quick Grid toggle -->
+            <!-- Quick controls: Mobile Question Tab Trigger & Live Score -->
             <div class="quick-nav-controls">
-              <button id="toggle-grid-btn" class="btn btn-ghost btn-sm" title="Toggle Question Map">
+              <!-- Mobile Floating / Inline Palette Trigger -->
+              <button id="mobile-palette-btn" class="btn btn-secondary btn-sm mobile-palette-trigger" title="Open Question Palette">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="7" height="7"></rect>
                   <rect x="14" y="3" width="7" height="7"></rect>
                   <rect x="14" y="14" width="7" height="7"></rect>
                   <rect x="3" y="14" width="7" height="7"></rect>
                 </svg>
-                <span>Question List</span>
+                <span>Question Tab (<span id="palette-summary-count">0/0</span>)</span>
               </button>
 
               <div class="live-score-badge">
@@ -217,129 +218,199 @@
           <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="10">
             <div id="progress-bar-fill" class="progress-fill" style="width: 10%;"></div>
           </div>
-
-          <!-- Expandable Questions Navigator Grid -->
-          <div id="questions-grid-drawer" class="questions-grid-drawer hidden">
-            <div class="grid-header">
-              <span>Jump to Question</span>
-              <div class="grid-legend">
-                <span class="legend-item"><span class="legend-dot dot-correct"></span> Correct</span>
-                <span class="legend-item"><span class="legend-dot dot-incorrect"></span> Incorrect</span>
-                <span class="legend-item"><span class="legend-dot dot-unanswered"></span> Pending</span>
-              </div>
-            </div>
-            <div id="questions-grid-list" class="questions-grid-list">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
         </div>
 
-        <!-- Question Card -->
-        <article class="question-card" id="question-card">
-          <!-- Card Header: Badges & metadata -->
-          <div class="card-header">
-            <div class="badges-row">
-              <span id="q-topic-badge" class="badge badge-topic hidden">Topic</span>
-              <span id="q-type-badge" class="badge badge-type">Single Choice</span>
+        <!-- SPLIT LAYOUT: Question Card on Left + Question Palette on Right -->
+        <div class="quiz-split-layout">
+          
+          <!-- LEFT / MAIN PANE: Current Question -->
+          <div class="quiz-main-pane">
+            <article class="question-card" id="question-card">
+              <!-- Card Header: Badges & metadata -->
+              <div class="card-header">
+                <div class="badges-row">
+                  <span id="q-topic-badge" class="badge badge-topic hidden">Topic</span>
+                  <span id="q-type-badge" class="badge badge-type">Single Choice</span>
+                  <span id="q-skipped-badge" class="badge badge-skipped hidden">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                      <line x1="19" y1="5" x2="19" y2="19"></line>
+                    </svg>
+                    <span>Skipped</span>
+                  </span>
+                </div>
+                <span id="q-hint-instruction" class="instruction-hint">Select 1 option</span>
+              </div>
+
+              <!-- Question Body -->
+              <h2 id="q-text" class="question-text">
+                Loading question...
+              </h2>
+
+              <!-- Options Container -->
+              <fieldset id="options-container" class="options-container">
+                <legend class="sr-only">Answer options</legend>
+                <!-- Rendered by JS -->
+              </fieldset>
+
+              <!-- Result Feedback Card (Appears after submission) -->
+              <div id="feedback-card" class="feedback-card hidden" role="region" aria-live="polite">
+                <div class="feedback-header">
+                  <div id="feedback-icon" class="feedback-icon-wrapper"></div>
+                  <div class="feedback-text-group">
+                    <h3 id="feedback-title" class="feedback-title">Result Title</h3>
+                    <p id="feedback-desc" class="feedback-desc">Feedback message</p>
+                  </div>
+                </div>
+
+                <!-- Explanation area -->
+                <div id="explanation-box" class="explanation-box hidden">
+                  <div class="explanation-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2v1"></path>
+                      <path d="M12 21v1"></path>
+                      <path d="M4.22 4.22l.71.71"></path>
+                      <path d="M18.36 18.36l.71.71"></path>
+                      <path d="M1 12h1"></path>
+                      <path d="M21 12h1"></path>
+                      <path d="M4.22 19.78l.71-.71"></path>
+                      <path d="M18.36 5.64l.71-.71"></path>
+                      <path d="M9 18h6"></path>
+                      <path d="M10 22h4"></path>
+                      <path d="M12 6a5 5 0 0 0-5 5c0 2 1.5 3.5 2 4.5h6c.5-1 2-2.5 2-4.5a5 5 0 0 0-5-5z"></path>
+                    </svg>
+                    <span>Explanation</span>
+                  </div>
+                  <div id="explanation-text" class="explanation-text"></div>
+                </div>
+              </div>
+
+              <!-- Card Footer: Controls & Navigation -->
+              <div class="card-footer">
+                <div class="footer-left">
+                  <button id="prev-btn" class="btn btn-outline" disabled title="Go to previous question (Left Arrow)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>Previous</span>
+                  </button>
+                </div>
+
+                <div class="footer-right">
+                  <!-- Skip Button (Visible when question is not yet submitted) -->
+                  <button id="skip-btn" class="btn btn-skip" title="Skip this question for now (Key: S)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                      <line x1="19" y1="5" x2="19" y2="19"></line>
+                    </svg>
+                    <span>Skip</span>
+                  </button>
+
+                  <!-- Submit Button -->
+                  <button id="submit-btn" class="btn btn-primary" disabled title="Submit your selection (Enter)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Check Answer</span>
+                  </button>
+
+                  <!-- Next Button (revealed after submission) -->
+                  <button id="next-btn" class="btn btn-primary hidden" title="Proceed to next question (Enter or Right Arrow)">
+                    <span>Next Question</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+
+                  <!-- Finish Quiz Button (on last question after submission) -->
+                  <button id="finish-btn" class="btn btn-success hidden" title="View final quiz score">
+                    <span>View Results</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                      <path d="M4 22h16"></path>
+                      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <!-- Keyboard shortcut hints footer -->
+            <div class="shortcuts-hint">
+              <span>Shortcuts:</span>
+              <kbd>A</kbd>-<kbd>D</kbd> or <kbd>1</kbd>-<kbd>4</kbd> Select
+              <span class="sep">&bull;</span>
+              <kbd>S</kbd> Skip
+              <span class="sep">&bull;</span>
+              <kbd>Enter</kbd> Check / Next
+              <span class="sep">&bull;</span>
+              <kbd>&larr;</kbd> / <kbd>&rarr;</kbd> Prev / Next
             </div>
-            <span id="q-hint-instruction" class="instruction-hint">Select 1 option</span>
           </div>
 
-          <!-- Question Body -->
-          <h2 id="q-text" class="question-text">
-            Loading question...
-          </h2>
-
-          <!-- Options Container -->
-          <fieldset id="options-container" class="options-container">
-            <legend class="sr-only">Answer options</legend>
-            <!-- Rendered by JS -->
-          </fieldset>
-
-          <!-- Result Feedback Card (Appears after submission) -->
-          <div id="feedback-card" class="feedback-card hidden" role="region" aria-live="polite">
-            <div class="feedback-header">
-              <div id="feedback-icon" class="feedback-icon-wrapper"></div>
-              <div class="feedback-text-group">
-                <h3 id="feedback-title" class="feedback-title">Result Title</h3>
-                <p id="feedback-desc" class="feedback-desc">Feedback message</p>
-              </div>
-            </div>
-
-            <!-- Explanation area -->
-            <div id="explanation-box" class="explanation-box hidden">
-              <div class="explanation-title">
+          <!-- RIGHT / SIDEBAR PANE: Question Palette ("Nearby Question Tab") -->
+          <aside class="quiz-sidebar-palette" id="quiz-sidebar-palette">
+            <div class="palette-header">
+              <div class="palette-title-group">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2v1"></path>
-                  <path d="M12 21v1"></path>
-                  <path d="M4.22 4.22l.71.71"></path>
-                  <path d="M18.36 18.36l.71.71"></path>
-                  <path d="M1 12h1"></path>
-                  <path d="M21 12h1"></path>
-                  <path d="M4.22 19.78l.71-.71"></path>
-                  <path d="M18.36 5.64l.71-.71"></path>
-                  <path d="M9 18h6"></path>
-                  <path d="M10 22h4"></path>
-                  <path d="M12 6a5 5 0 0 0-5 5c0 2 1.5 3.5 2 4.5h6c.5-1 2-2.5 2-4.5a5 5 0 0 0-5-5z"></path>
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
                 </svg>
-                <span>Explanation</span>
+                <span class="palette-title">Question Palette</span>
               </div>
-              <div id="explanation-text" class="explanation-text"></div>
-            </div>
-          </div>
-
-          <!-- Card Footer: Controls & Navigation -->
-          <div class="card-footer">
-            <div class="footer-left">
-              <button id="prev-btn" class="btn btn-outline" disabled title="Go to previous question (Left Arrow)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-                <span>Previous</span>
-              </button>
+              <div class="palette-header-actions">
+                <span class="palette-total-pill" id="palette-total-pill">100 Qs</span>
+                <button id="close-palette-drawer-btn" class="icon-btn btn-sm close-drawer-btn" title="Close Question Palette" aria-label="Close palette">
+                  &times;
+                </button>
+              </div>
             </div>
 
-            <div class="footer-right">
-              <!-- Submit Button -->
-              <button id="submit-btn" class="btn btn-primary" disabled title="Submit your selection (Enter)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                <span>Check Answer</span>
-              </button>
-
-              <!-- Next Button (revealed after submission) -->
-              <button id="next-btn" class="btn btn-primary hidden" title="Proceed to next question (Enter or Right Arrow)">
-                <span>Next Question</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </button>
-
-              <!-- Finish Quiz Button (on last question after submission) -->
-              <button id="finish-btn" class="btn btn-success hidden" title="View final quiz score">
-                <span>View Results</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-                  <path d="M4 22h16"></path>
-                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
-                </svg>
-              </button>
+            <!-- Palette Status Legend Counters -->
+            <div class="palette-legend-grid">
+              <div class="legend-card card-correct" title="Answered Correctly">
+                <span class="legend-count" id="count-correct">0</span>
+                <span class="legend-label">Correct</span>
+              </div>
+              <div class="legend-card card-incorrect" title="Answered Incorrectly">
+                <span class="legend-count" id="count-incorrect">0</span>
+                <span class="legend-label">Incorrect</span>
+              </div>
+              <div class="legend-card card-skipped" title="Skipped Questions">
+                <span class="legend-count" id="count-skipped">0</span>
+                <span class="legend-label">Skipped</span>
+              </div>
+              <div class="legend-card card-pending" title="Not Visited / Pending">
+                <span class="legend-count" id="count-pending">0</span>
+                <span class="legend-label">Pending</span>
+              </div>
             </div>
-          </div>
-        </article>
 
-        <!-- Keyboard shortcut hints footer -->
-        <div class="shortcuts-hint">
-          <span>Shortcuts:</span>
-          <kbd>A</kbd>-<kbd>D</kbd> or <kbd>1</kbd>-<kbd>4</kbd> Select option
-          <span class="sep">&bull;</span>
-          <kbd>Enter</kbd> Check / Next
-          <span class="sep">&bull;</span>
-          <kbd>&larr;</kbd> / <kbd>&rarr;</kbd> Prev / Next
+            <!-- Quick Filter Bar -->
+            <div class="palette-filter-bar">
+              <button class="filter-chip active" data-filter="all">All</button>
+              <button class="filter-chip" data-filter="pending">Pending</button>
+              <button class="filter-chip" data-filter="skipped">Skipped</button>
+              <button class="filter-chip" data-filter="answered">Answered</button>
+            </div>
+
+            <!-- Number Grid with Color Statuses -->
+            <div class="palette-scroll-container">
+              <div class="palette-grid-list" id="sidebar-palette-grid">
+                <!-- Rendered dynamically via JS -->
+              </div>
+            </div>
+
+            <div class="palette-footer-hint">
+              Click any question number above to jump directly to it.
+            </div>
+          </aside>
+
         </div>
       </section>
 
@@ -376,6 +447,10 @@
             <div class="stat-box danger">
               <div class="stat-big" id="res-incorrect">0</div>
               <div class="stat-label">Incorrect</div>
+            </div>
+            <div class="stat-box warning">
+              <div class="stat-big" id="res-skipped">0</div>
+              <div class="stat-label">Skipped</div>
             </div>
             <div class="stat-box neutral">
               <div class="stat-big" id="res-total">0</div>
@@ -442,6 +517,9 @@
       </div>
     </div>
 
+    <!-- Backdrop for mobile drawer -->
+    <div id="palette-drawer-backdrop" class="drawer-backdrop hidden"></div>
+
     <!-- Toast message container -->
     <div id="toast-container" class="toast-container" aria-live="polite"></div>
   </div>
@@ -449,4 +527,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-

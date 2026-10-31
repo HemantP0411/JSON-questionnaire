@@ -12,7 +12,8 @@
   const state = {
     questions: [],         // Array of parsed question objects
     currentIndex: 0,       // Current question index (0-based)
-    answers: {},           // Map: questionIndex -> { selectedIds: Set, isSubmitted: bool, isCorrect: bool, isPartial: bool }
+    answers: {},           // Map: questionIndex -> { selectedIds: Set, isSubmitted: bool, isCorrect: bool, isPartial: bool, isSkipped: bool }
+    paletteFilter: 'all',  // 'all' | 'pending' | 'skipped' | 'answered'
     isSoundEnabled: true,
     theme: 'dark',
     audioCtx: null
@@ -107,20 +108,20 @@
     uploadErrorMsg: document.getElementById('upload-error-msg'),
     uploadErrorClose: document.getElementById('upload-error-close'),
 
-    // Quiz screen
+    // Quiz top bar
     currentQNum: document.getElementById('current-q-num'),
     totalQNum: document.getElementById('total-q-num'),
     liveScoreValue: document.getElementById('live-score-value'),
     liveScoreAttempted: document.getElementById('live-score-attempted'),
     progressBarFill: document.getElementById('progress-bar-fill'),
-    toggleGridBtn: document.getElementById('toggle-grid-btn'),
-    questionsGridDrawer: document.getElementById('questions-grid-drawer'),
-    questionsGridList: document.getElementById('questions-grid-list'),
+    mobilePaletteBtn: document.getElementById('mobile-palette-btn'),
+    paletteSummaryCount: document.getElementById('palette-summary-count'),
 
     // Question card
     questionCard: document.getElementById('question-card'),
     qTopicBadge: document.getElementById('q-topic-badge'),
     qTypeBadge: document.getElementById('q-type-badge'),
+    qSkippedBadge: document.getElementById('q-skipped-badge'),
     qHintInstruction: document.getElementById('q-hint-instruction'),
     qText: document.getElementById('q-text'),
     optionsContainer: document.getElementById('options-container'),
@@ -135,9 +136,22 @@
 
     // Action buttons
     prevBtn: document.getElementById('prev-btn'),
+    skipBtn: document.getElementById('skip-btn'),
     submitBtn: document.getElementById('submit-btn'),
     nextBtn: document.getElementById('next-btn'),
     finishBtn: document.getElementById('finish-btn'),
+
+    // Sidebar Question Palette
+    quizSidebarPalette: document.getElementById('quiz-sidebar-palette'),
+    paletteTotalPill: document.getElementById('palette-total-pill'),
+    closePaletteDrawerBtn: document.getElementById('close-palette-drawer-btn'),
+    paletteDrawerBackdrop: document.getElementById('palette-drawer-backdrop'),
+    sidebarPaletteGrid: document.getElementById('sidebar-palette-grid'),
+    countCorrect: document.getElementById('count-correct'),
+    countIncorrect: document.getElementById('count-incorrect'),
+    countSkipped: document.getElementById('count-skipped'),
+    countPending: document.getElementById('count-pending'),
+    filterChips: document.querySelectorAll('.filter-chip'),
 
     // Results screen
     resultsTitle: document.getElementById('results-title'),
@@ -145,6 +159,7 @@
     resPercentage: document.getElementById('res-percentage'),
     resCorrect: document.getElementById('res-correct'),
     resIncorrect: document.getElementById('res-incorrect'),
+    resSkipped: document.getElementById('res-skipped'),
     resTotal: document.getElementById('res-total'),
     resRetryBtn: document.getElementById('res-retry-btn'),
     resReviewBtn: document.getElementById('res-review-btn'),
@@ -186,7 +201,7 @@
       gain.connect(state.audioCtx.destination);
 
       if (type === 'correct') {
-        // High harmonic chord
+        // High harmonic chime
         osc.type = 'sine';
         osc.frequency.setValueAtTime(587.33, now); // D5
         osc.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
@@ -213,7 +228,7 @@
         osc.stop(now + 0.05);
       }
     } catch (e) {
-      // Audio playback fails silently if restricted
+      // Audio fails silently if restricted by browser policy
     }
   }
 
@@ -346,7 +361,6 @@
       // Determine or validate question type
       let type = item.type ? String(item.type).toLowerCase().trim() : null;
       if (type !== 'single' && type !== 'multiple') {
-        // Infer automatically based on number of correct options
         type = correctIds.length > 1 ? 'multiple' : 'single';
       }
 
@@ -379,6 +393,7 @@
       el.exitQuizBtn.classList.add('hidden');
     }
 
+    closePaletteDrawer();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -396,7 +411,7 @@
       toast.style.transform = 'translateY(10px)';
       toast.style.transition = 'all 0.25s ease';
       setTimeout(() => toast.remove(), 250);
-    }, 3200);
+    }, 3000);
   }
 
   function showUploadError(msg) {
@@ -415,6 +430,16 @@
     state.questions = questionsList;
     state.currentIndex = 0;
     state.answers = {};
+    state.paletteFilter = 'all';
+
+    // Reset filter chips UI
+    el.filterChips.forEach(chip => {
+      if (chip.getAttribute('data-filter') === 'all') {
+        chip.classList.add('active');
+      } else {
+        chip.classList.remove('active');
+      }
+    });
 
     // Initialize answer records
     questionsList.forEach((_, idx) => {
@@ -422,15 +447,14 @@
         selectedIds: new Set(),
         isSubmitted: false,
         isCorrect: false,
-        isPartial: false
+        isPartial: false,
+        isSkipped: false
       };
     });
 
     hideUploadError();
-    el.questionsGridDrawer.classList.add('hidden');
     switchScreen('quiz');
     renderCurrentQuestion();
-    renderQuestionsGrid();
   }
 
   // ==========================================================================
@@ -466,6 +490,13 @@
     el.qHintInstruction.textContent = isMultiple
       ? `Select all that apply (${currentQ.correct_option_ids.length} correct)`
       : 'Select 1 option';
+
+    // Show Skipped badge if question is currently skipped and not yet submitted
+    if (answerRecord.isSkipped && !answerRecord.isSubmitted) {
+      el.qSkippedBadge.classList.remove('hidden');
+    } else {
+      el.qSkippedBadge.classList.add('hidden');
+    }
 
     // Render Question Text (with backtick code formatting)
     el.qText.innerHTML = formatCodeSnippets(escapeHTML(currentQ.question));
@@ -561,7 +592,12 @@
 
     // Update Action Buttons
     updateCardFooterControls();
-    renderQuestionsGrid();
+
+    // Re-render Question Palette
+    renderQuestionPalette();
+
+    // Auto-scroll active button into view in palette
+    scrollActivePaletteButtonIntoView();
   }
 
   // ==========================================================================
@@ -592,6 +628,34 @@
   }
 
   // ==========================================================================
+  // Skip Question Logic
+  // ==========================================================================
+  function skipCurrentQuestion() {
+    const answerRecord = state.answers[state.currentIndex];
+    if (answerRecord.isSubmitted) return;
+
+    playSound('click');
+    answerRecord.isSkipped = true;
+
+    showToast(`Question ${state.currentIndex + 1} skipped`);
+
+    // Move to next question or if at the end, find next unattempted
+    if (state.currentIndex < state.questions.length - 1) {
+      goToNextQuestion();
+    } else {
+      // Look for first unattempted question
+      const nextUnanswered = state.questions.findIndex((_, idx) => {
+        const a = state.answers[idx];
+        return !a.isSubmitted && idx !== state.currentIndex;
+      });
+      if (nextUnanswered !== -1) {
+        state.currentIndex = nextUnanswered;
+      }
+      renderCurrentQuestion();
+    }
+  }
+
+  // ==========================================================================
   // Answer Submission & Verification
   // ==========================================================================
   function submitAnswer() {
@@ -601,6 +665,7 @@
     if (answerRecord.isSubmitted || answerRecord.selectedIds.size === 0) return;
 
     answerRecord.isSubmitted = true;
+    answerRecord.isSkipped = false; // Reset skipped flag when answered
 
     // Check correctness
     const selectedArr = Array.from(answerRecord.selectedIds);
@@ -631,7 +696,7 @@
     // Re-render question with feedback
     renderCurrentQuestion();
 
-    // Scroll slightly down to feedback if needed
+    // Scroll slightly down to feedback if on mobile
     if (window.innerWidth < 768) {
       el.feedbackCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -700,13 +765,16 @@
     el.prevBtn.disabled = isFirst;
 
     if (!answerRecord.isSubmitted) {
-      // Show Submit button
+      // Question not submitted: show Skip and Check Answer
+      el.skipBtn.classList.remove('hidden');
       el.submitBtn.classList.remove('hidden');
       el.submitBtn.disabled = answerRecord.selectedIds.size === 0;
+
       el.nextBtn.classList.add('hidden');
       el.finishBtn.classList.add('hidden');
     } else {
-      // Hide Submit button
+      // Question submitted: hide Skip and Check Answer
+      el.skipBtn.classList.add('hidden');
       el.submitBtn.classList.add('hidden');
 
       if (!isLast) {
@@ -734,36 +802,110 @@
   }
 
   // ==========================================================================
-  // Questions Grid Drawer
+  // Question Palette ("Nearby Question Tab")
   // ==========================================================================
-  function renderQuestionsGrid() {
-    el.questionsGridList.innerHTML = '';
+  function renderQuestionPalette() {
+    const total = state.questions.length;
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let skippedCount = 0;
+    let pendingCount = 0;
+
+    // Calculate status counts
+    state.questions.forEach((_, idx) => {
+      const ans = state.answers[idx];
+      if (ans.isSubmitted) {
+        if (ans.isCorrect) correctCount++;
+        else incorrectCount++;
+      } else if (ans.isSkipped) {
+        skippedCount++;
+      } else {
+        pendingCount++;
+      }
+    });
+
+    // Update Palette Legend Counters
+    el.countCorrect.textContent = correctCount;
+    el.countIncorrect.textContent = incorrectCount;
+    el.countSkipped.textContent = skippedCount;
+    el.countPending.textContent = pendingCount;
+
+    // Update Header Pill & Mobile trigger count
+    const answeredCount = correctCount + incorrectCount;
+    el.paletteTotalPill.textContent = `${total} Qs`;
+    el.paletteSummaryCount.textContent = `${answeredCount}/${total}`;
+
+    // Render Question Grid Buttons based on current filter
+    el.sidebarPaletteGrid.innerHTML = '';
 
     state.questions.forEach((_, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'grid-num-btn';
-      btn.textContent = idx + 1;
+      const ans = state.answers[idx];
+      const isSubmitted = ans.isSubmitted;
+      const isSkipped = !isSubmitted && ans.isSkipped;
+      const isPending = !isSubmitted && !ans.isSkipped;
 
+      // Filter check
+      if (state.paletteFilter === 'pending' && !isPending) return;
+      if (state.paletteFilter === 'skipped' && !isSkipped) return;
+      if (state.paletteFilter === 'answered' && !isSubmitted) return;
+
+      const btn = document.createElement('button');
+      btn.className = 'palette-btn';
+      btn.textContent = idx + 1;
+      btn.setAttribute('data-index', idx);
+
+      // Status class
+      if (isSubmitted) {
+        if (ans.isCorrect) {
+          btn.classList.add('correct');
+          btn.title = `Question ${idx + 1}: Correct`;
+        } else {
+          btn.classList.add('incorrect');
+          btn.title = `Question ${idx + 1}: Incorrect`;
+        }
+      } else if (isSkipped) {
+        btn.classList.add('skipped');
+        btn.title = `Question ${idx + 1}: Skipped`;
+      } else {
+        btn.classList.add('pending');
+        btn.title = `Question ${idx + 1}: Not Attempted`;
+      }
+
+      // Active indicator
       if (idx === state.currentIndex) {
         btn.classList.add('active');
       }
 
-      const ans = state.answers[idx];
-      if (ans && ans.isSubmitted) {
-        if (ans.isCorrect) {
-          btn.classList.add('correct');
-        } else {
-          btn.classList.add('incorrect');
-        }
-      }
-
+      // Click to jump straight to question!
       btn.addEventListener('click', () => {
         state.currentIndex = idx;
         renderCurrentQuestion();
+        closePaletteDrawer();
       });
 
-      el.questionsGridList.appendChild(btn);
+      el.sidebarPaletteGrid.appendChild(btn);
     });
+  }
+
+  function scrollActivePaletteButtonIntoView() {
+    setTimeout(() => {
+      const activeBtn = el.sidebarPaletteGrid.querySelector('.palette-btn.active');
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
+  }
+
+  function openPaletteDrawer() {
+    el.quizSidebarPalette.classList.add('drawer-open');
+    el.paletteDrawerBackdrop.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePaletteDrawer() {
+    el.quizSidebarPalette.classList.remove('drawer-open');
+    el.paletteDrawerBackdrop.classList.add('hidden');
+    document.body.style.overflow = '';
   }
 
   function updateLiveScoreBadge() {
@@ -787,20 +929,29 @@
   function showResultsScreen() {
     const total = state.questions.length;
     let correct = 0;
+    let incorrect = 0;
+    let skipped = 0;
 
     Object.values(state.answers).forEach(ans => {
-      if (ans.isCorrect) correct++;
+      if (ans.isSubmitted) {
+        if (ans.isCorrect) correct++;
+        else incorrect++;
+      } else if (ans.isSkipped) {
+        skipped++;
+      } else {
+        skipped++; // Unattempted treated as skipped in final summary
+      }
     });
 
-    const incorrect = total - correct;
-    const percentage = Math.round((correct / total) * 100);
+    const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
     el.resPercentage.textContent = `${percentage}%`;
     el.resCorrect.textContent = correct;
     el.resIncorrect.textContent = incorrect;
+    el.resSkipped.textContent = skipped;
     el.resTotal.textContent = total;
 
-    // Custom Encouraging Title & Message
+    // Encouraging Titles & Messages
     if (percentage === 100) {
       el.resultsTitle.textContent = 'Perfect Score! 🌟';
       el.resultsMessage.textContent = 'Outstanding! You answered every question correctly.';
@@ -809,7 +960,7 @@
       el.resultsMessage.textContent = 'Great performance! You demonstrated solid knowledge.';
     } else if (percentage >= 50) {
       el.resultsTitle.textContent = 'Good Effort! 👍';
-      el.resultsMessage.textContent = 'Not bad, review the missed questions below to level up!';
+      el.resultsMessage.textContent = 'Not bad, review the skipped and missed questions below to level up!';
     } else {
       el.resultsTitle.textContent = 'Keep Practicing! 💪';
       el.resultsMessage.textContent = 'Review the detailed answers and explanations below to improve.';
@@ -825,15 +976,24 @@
 
     state.questions.forEach((q, idx) => {
       const ans = state.answers[idx];
-      const isCorrect = ans && ans.isCorrect;
+      const isSubmitted = ans && ans.isSubmitted;
+      const isCorrect = isSubmitted && ans.isCorrect;
+      const isSkipped = !isSubmitted;
 
       const itemCard = document.createElement('div');
-      itemCard.className = `review-item-card ${isCorrect ? 'is-correct' : 'is-incorrect'}`;
+      itemCard.className = `review-item-card ${
+        isCorrect ? 'is-correct' : (isSkipped ? 'is-skipped' : 'is-incorrect')
+      }`;
 
       // Status pill
-      const statusPill = isCorrect
-        ? `<span class="badge" style="background: var(--success-surface); color: var(--success-text);">✓ Correct</span>`
-        : `<span class="badge" style="background: var(--danger-surface); color: var(--danger-text);">✕ Incorrect</span>`;
+      let statusPill = '';
+      if (isCorrect) {
+        statusPill = `<span class="badge" style="background: var(--success-surface); color: var(--success-text);">✓ Correct</span>`;
+      } else if (isSkipped) {
+        statusPill = `<span class="badge badge-skipped">↷ Skipped</span>`;
+      } else {
+        statusPill = `<span class="badge" style="background: var(--danger-surface); color: var(--danger-text);">✕ Incorrect</span>`;
+      }
 
       // Options list
       const optionsHTML = q.options.map(opt => {
@@ -953,35 +1113,45 @@
   // ==========================================================================
   function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-      // Do not handle shortcuts if focus is in a textarea or modal is open
+      // Do not handle shortcuts if focus is in a textarea or input or modal is open
       if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
       if (!screens.quiz.classList.contains('active')) return;
 
       const currentQ = state.questions[state.currentIndex];
       const answerRecord = state.answers[state.currentIndex];
 
-      // Option selection by 1-9 or A-Z
       const key = e.key.toUpperCase();
 
-      // Number keys 1-9
+      // Skip Shortcut (Key: S)
+      if (key === 'S' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!answerRecord.isSubmitted) {
+          e.preventDefault();
+          skipCurrentQuestion();
+          return;
+        }
+      }
+
+      // Option selection by number keys 1-9
       if (/^[1-9]$/.test(key)) {
         const index = parseInt(key, 10) - 1;
         if (currentQ && currentQ.options[index] && !answerRecord.isSubmitted) {
           e.preventDefault();
           handleOptionSelect(currentQ.options[index].id);
+          return;
         }
       }
 
-      // Letter keys A-Z
+      // Letter keys A-D (or any option letter)
       if (/^[A-Z]$/.test(key) && key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const index = key.charCodeAt(0) - 65;
         if (currentQ && currentQ.options[index] && !answerRecord.isSubmitted) {
           e.preventDefault();
           handleOptionSelect(currentQ.options[index].id);
+          return;
         }
       }
 
-      // Enter key
+      // Enter key (Submit / Next)
       if (e.key === 'Enter') {
         if (!answerRecord.isSubmitted) {
           if (answerRecord.selectedIds.size > 0) {
@@ -997,17 +1167,16 @@
             showResultsScreen();
           }
         }
+        return;
       }
 
-      // Arrow Left / Arrow Right for navigation
+      // Arrow Left / Arrow Right for question navigation
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         goToPreviousQuestion();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        if (answerRecord.isSubmitted || state.currentIndex < state.questions.length - 1) {
-          goToNextQuestion();
-        }
+        goToNextQuestion();
       }
     });
   }
@@ -1062,7 +1231,6 @@
 
     // Try Sample Button
     el.loadSampleBtn.addEventListener('click', () => {
-      // First try to fetch sample-questions.json, fallback to embedded sample
       fetch('sample-questions.json')
         .then(res => res.json())
         .then(data => {
@@ -1111,14 +1279,25 @@
     });
 
     // Quiz action buttons
+    el.skipBtn.addEventListener('click', skipCurrentQuestion);
     el.submitBtn.addEventListener('click', submitAnswer);
     el.nextBtn.addEventListener('click', goToNextQuestion);
     el.prevBtn.addEventListener('click', goToPreviousQuestion);
     el.finishBtn.addEventListener('click', showResultsScreen);
 
-    // Toggle question grid drawer
-    el.toggleGridBtn.addEventListener('click', () => {
-      el.questionsGridDrawer.classList.toggle('hidden');
+    // Mobile Question Palette drawer controls
+    el.mobilePaletteBtn.addEventListener('click', openPaletteDrawer);
+    el.closePaletteDrawerBtn.addEventListener('click', closePaletteDrawer);
+    el.paletteDrawerBackdrop.addEventListener('click', closePaletteDrawer);
+
+    // Palette Filter Chips
+    el.filterChips.forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        el.filterChips.forEach(c => c.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        state.paletteFilter = e.currentTarget.getAttribute('data-filter') || 'all';
+        renderQuestionPalette();
+      });
     });
 
     // Results screen actions
@@ -1136,8 +1315,13 @@
 
     // Close modal on escape
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !el.pasteModal.classList.contains('hidden')) {
-        el.pasteModal.classList.add('hidden');
+      if (e.key === 'Escape') {
+        if (!el.pasteModal.classList.contains('hidden')) {
+          el.pasteModal.classList.add('hidden');
+        }
+        if (el.quizSidebarPalette.classList.contains('drawer-open')) {
+          closePaletteDrawer();
+        }
       }
     });
   }
@@ -1159,4 +1343,3 @@
     init();
   }
 })();
-
